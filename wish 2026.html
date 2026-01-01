@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Happy New Year 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+    import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+    // 1. SCENE SETUP
+    const scene = new THREE.Scene();
+    // Add some fog for depth
+    scene.fog = new THREE.FogExp2(0x000000, 0.002);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 50;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    // 2. LIGHTING
+    const pointLight = new THREE.PointLight(0xffffff, 1000, 100);
+    pointLight.position.set(10, 10, 10);
+    scene.add(pointLight);
+
+    const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
+    scene.add(ambientLight);
+
+    // 3. CREATE PARTICLES (STARS)
+    const particleGeometry = new THREE.BufferGeometry();
+    const particlesCount = 2000;
+    const posArray = new Float32Array(particlesCount * 3);
+
+    for(let i = 0; i < particlesCount * 3; i++) {
+        // Random positions between -100 and 100
+        posArray[i] = (Math.random() - 0.5) * 200; 
+    }
+
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    
+    // Make particles gold/yellow
+    const particleMaterial = new THREE.PointsMaterial({
+        size: 0.3,
+        color: 0xffd700, 
+        transparent: true,
+        opacity: 0.8,
+    });
+
+    const particlesMesh = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particlesMesh);
+
+    // 4. LOAD FONT & CREATE TEXT
+    const loader = new FontLoader();
+    // Using a standard font hosted on unpkg
+    loader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', function (font) {
+        
+        const textGeo = new TextGeometry('Happy New Year\n      2026', {
+            font: font,
+            size: 6,
+            height: 1, // Thickness of text
+            curveSegments: 12,
+            bevelEnabled: true,
+            bevelThickness: 0.1,
+            bevelSize: 0.1,
+            bevelOffset: 0,
+            bevelSegments: 5
+        });
+
+        // Center the text
+        textGeo.computeBoundingBox();
+        const centerOffset = - 0.5 * ( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x );
+        textGeo.translate(centerOffset, 0, 0);
+
+        // Gradient-like material (using Normal material for rainbow effect or Standard for solid)
+        const textMaterial = new THREE.MeshNormalMaterial(); 
+        const textMesh = new THREE.Mesh(textGeo, textMaterial);
+        
+        textMesh.position.y = -2; // Adjust vertical position
+        scene.add(textMesh);
+
+        // Animation Loop inside font load to ensure text exists before animating
+        const animate = function () {
+            requestAnimationFrame(animate);
+
+            // Rotate the entire particle system slowly
+            particlesMesh.rotation.y += 0.001;
+            particlesMesh.rotation.x += 0.0005;
+
+            // Gentle floating effect for text
+            const time = Date.now() * 0.001;
+            textMesh.position.y += Math.sin(time) * 0.02;
+            textMesh.rotation.y = Math.sin(time) * 0.1;
+
+            renderer.render(scene, camera);
+        };
+
+        animate();
+    });
+
+    // Handle Window Resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+</script>
+</body>
+</html>
